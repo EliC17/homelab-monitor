@@ -1,10 +1,12 @@
 import asyncio, aiohttp
 from adapters.docker_adapter import DockerAdapter
 from adapters.proxmox_adapter import ProxmoxAdapter
+from adapters.generic_adapter import GenericAdapter
 
 ADAPTERS = {
     "docker_host": DockerAdapter(),
     "proxmox_host": ProxmoxAdapter(),
+    "generic": GenericAdapter()
 }
 API_BASE = "http://localhost:8000/api/v1"
 

@@ -5,7 +5,7 @@
 TO RUN, bash dev-up.sh
 TO STOP, CTRL+C, bash dev-down.sh
 
-In seperate terminal run source .venv/Scripts/activate
+In seperate terminal run this in collectors directory: source .venv/Scripts/activate
 
 For testing once in .venv run these
 docker exec -it homelab-monitor-db-1 psql -U monitor -d monitor -c "CREATE DATABASE monitor_test;"

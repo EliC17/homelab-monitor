@@ -24,3 +24,14 @@ def get_target(target_id: str, db: Session = Depends(get_db)):
     if not target:
         raise HTTPException(404, "Target not found")
     return target
+
+@router.patch("/{target_id}", response_model=TargetOut)
+def update_target(target_id: str, payload: dict, db: Session = Depends(get_db)):
+    target = db.get(Target, target_id)
+    if not target:
+        raise HTTPException(404, "Target not found")
+    for key, value in payload.items():
+        setattr(target, key, value)
+    db.commit()
+    db.refresh(target)
+    return target

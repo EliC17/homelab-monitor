@@ -10,6 +10,7 @@ sys.path.append(os.getcwd())  # so `app` is importable
 from app.core.config import settings
 from app.core.db import Base
 from app.models.target import Target
+from app.models.metric import MetricSample
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

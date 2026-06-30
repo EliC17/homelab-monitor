@@ -7,9 +7,13 @@ certifi==2026.6.17
 charset-normalizer==3.4.7
 docker==7.1.0
 frozenlist==1.8.0
+icmplib==3.0.4
 idna==3.18
 multidict==6.7.1
 propcache==0.5.2
+proxmoxer==2.3.0
+pyasn1==0.6.3
+pysnmp==7.1.27
 python-dotenv==1.2.2
 pywin32==312
 requests==2.34.2

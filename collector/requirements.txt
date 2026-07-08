@@ -15,7 +15,7 @@ proxmoxer==2.3.0
 pyasn1==0.6.3
 pysnmp==7.1.27
 python-dotenv==1.2.2
-pywin32==312
+# pywin32==312
 requests==2.34.2
 tzdata==2026.2
 tzlocal==5.4.4

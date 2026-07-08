@@ -1,27 +1,44 @@
+import os
 import asyncio
+import aiohttp
 import requests
-from scheduler import target_loop
+import logging
 
-API_BASE = "http://localhost:8000/api/v1"
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+logger = logging.getLogger(__name__)
 
-# TEMPORARY — replace with real Credential lookups in Milestone 6
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000/api/v1")
+COLLECTOR_SECRET = os.environ.get("COLLECTOR_SECRET", "")
+HEADERS = {"x-collector-secret": COLLECTOR_SECRET}
+
 CREDENTIALS_BY_TARGET_TYPE = {
     "proxmox_host": {
-        "user": "root@pam",
-        "token_name": "monitor",
-        "token_value": "0348d2fc-97f8-45f6-84f0-64296d1bc9dd",
-        "node_name": "pve", 
+        "user": os.environ.get("PROXMOX_USER", "root@pam"),
+        "token_name": os.environ.get("PROXMOX_TOKEN_NAME", "monitor"),
+        "token_value": os.environ.get("PROXMOX_TOKEN_VALUE", ""),
+        "node_name": os.environ.get("PROXMOX_NODE_NAME", "pve"),
     },
 }
-
-running_targets = {}   # target_id -> asyncio.Task
+running_targets = {}
 
 def fetch_targets():
-    return requests.get(f"{API_BASE}/targets").json()
+    try:
+        resp = requests.get(f"{API_BASE}/internal/targets", headers=HEADERS)
+        resp.raise_for_status()
+        data = resp.json()
+        if not isinstance(data, list):
+            logger.error(f"Unexpected targets response: {data}")
+            return []
+        return data
+    except Exception as e:
+        logger.error(f"Failed to fetch targets: {e}")
+        return []
 
-async def reconcile_loop(session, fetch_targets, interval=60):
+async def reconcile_loop(session, fetch_targets_fn, interval=60):
+    from scheduler import target_loop
     while True:
-        targets = {t["id"]: t for t in fetch_targets() if t["enabled"]}
+        targets = {t["id"]: t for t in fetch_targets_fn() if t["enabled"]}
+        logger.info(f"Reconcile: {len(targets)} active targets")
         for tid, t in targets.items():
             if tid not in running_targets:
                 credential = CREDENTIALS_BY_TARGET_TYPE.get(t["target_type"])
@@ -32,8 +49,22 @@ async def reconcile_loop(session, fetch_targets, interval=60):
                 del running_targets[tid]
         await asyncio.sleep(interval)
 
+async def wait_for_api():
+    api_root = API_BASE.replace("/api/v1", "")
+    for i in range(30):
+        try:
+            resp = requests.get(f"{api_root}/health", timeout=2)
+            if resp.status_code == 200:
+                logger.info("API is ready")
+                return
+        except Exception:
+            pass
+        logger.info(f"Waiting for API... attempt {i+1}/30")
+        await asyncio.sleep(10)
+    raise RuntimeError("API never became ready")
+
 async def main():
-    import aiohttp
+    await wait_for_api()
     async with aiohttp.ClientSession() as session:
         await reconcile_loop(session, fetch_targets)
 

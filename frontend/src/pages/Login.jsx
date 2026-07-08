@@ -8,15 +8,20 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  async function handleLogin() {
-    try {
-      const resp = await client.post("/auth/login", { username, password });
-      localStorage.setItem("token", resp.data.access_token);
-      navigate("/");
-    } catch {
-      setError("Invalid credentials");
-    }
+async function handleLogin() {
+  try {
+    const params = new URLSearchParams();
+    params.append("username", username);
+    params.append("password", password);
+    const resp = await client.post("/auth/login", params, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }
+    });
+    localStorage.setItem("token", resp.data.access_token);
+    window.location.href = "/";
+  } catch {
+    setError("Invalid credentials");
   }
+}
 
   return (
     <div style={{ maxWidth: 300, margin: "4rem auto" }}>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import TargetDetail from "./pages/TargetDetail";
@@ -26,10 +26,8 @@ function Nav() {
       <span style={{ color: "white", fontWeight: "bold", marginRight: "auto" }}>
         Homelab Monitor
       </span>
-      <Link to="/" style={{ color: "white", textDecoration: "none" }}>
-        Dashboard
-      </Link>
-      <Link to="/alerts" style={{ color: "white", textDecoration: "none", position: "relative" }}>
+      <a href="/" style={{ color: "white", textDecoration: "none" }}>Dashboard</a>
+      <a href="/alerts" style={{ color: "white", textDecoration: "none", position: "relative" }}>
         Alerts
         {alertCount > 0 && (
           <span style={{
@@ -41,21 +39,32 @@ function Nav() {
             {alertCount}
           </span>
         )}
-      </Link>
+      </a>
     </nav>
   );
 }
 
-export default function App() {
+function Layout() {
+  const location = useLocation();
+  const isLogin = location.pathname === "/login";
+
   return (
-    <BrowserRouter>
-      <Nav />
+    <>
+      {!isLogin && <Nav />}
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/targets/:id" element={<TargetDetail />} />
         <Route path="/alerts" element={<Alerts />} />
       </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Layout />
     </BrowserRouter>
   );
 }

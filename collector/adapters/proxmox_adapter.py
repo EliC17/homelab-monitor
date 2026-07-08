@@ -1,12 +1,16 @@
+import asyncio
+import logging
 from proxmoxer import ProxmoxAPI
 from .base import Adapter, MetricPoint
+
+logger = logging.getLogger(__name__)
 
 class ProxmoxAdapter(Adapter):
     async def collect(self, target, credential):
         try:
-            import asyncio
             return await asyncio.to_thread(self._collect_sync, target, credential)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Proxmox adapter error: {e}", exc_info=True)
             return [MetricPoint("reachable", 0)]
 
     def _collect_sync(self, target, credential):

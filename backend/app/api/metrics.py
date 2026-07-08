@@ -8,21 +8,15 @@ from app.models.alert import AlertRule
 from app.services.evaluator import evaluate_rule
 from uuid import UUID
 
-router = APIRouter(tags=["metrics"])
+# collector-facing routes (protected by collector secret in main.py)
+collector_router = APIRouter(tags=["collector"])
 
-@router.get("/targets/{target_id}/metrics")
-def get_metrics(
-    target_id: UUID,
-    metric_name: str | None = Query(None),
-    limit: int = Query(100),
-    db: Session = Depends(get_db)
-):
-    q = db.query(MetricSample).filter(MetricSample.target_id == target_id)
-    if metric_name:
-        q = q.filter(MetricSample.metric_name == metric_name)
-    return q.order_by(desc(MetricSample.recorded_at)).limit(limit).all()
+@collector_router.get("/internal/targets")
+def internal_targets(db: Session = Depends(get_db)):
+    from app.models.target import Target
+    return db.query(Target).filter(Target.enabled == True).all()
 
-@router.post("/metrics/ingest", status_code=201)
+@collector_router.post("/metrics/ingest", status_code=201)
 def ingest(payload: list[MetricIngest], db: Session = Depends(get_db)):
     rows = [MetricSample(**m.model_dump()) for m in payload]
     db.bulk_save_objects(rows)
@@ -41,3 +35,18 @@ def ingest(payload: list[MetricIngest], db: Session = Depends(get_db)):
         for rule in rules:
             evaluate_rule(db, rule, row)
     return {"ingested": len(rows)}
+
+# browser-facing routes (protected by JWT in main.py)
+metrics_router = APIRouter(tags=["metrics"])
+
+@metrics_router.get("/targets/{target_id}/metrics", response_model=list[MetricOut])
+def get_metrics(
+    target_id: UUID,
+    metric_name: str | None = Query(None),
+    limit: int = Query(100),
+    db: Session = Depends(get_db)
+):
+    q = db.query(MetricSample).filter(MetricSample.target_id == target_id)
+    if metric_name:
+        q = q.filter(MetricSample.metric_name == metric_name)
+    return q.order_by(desc(MetricSample.recorded_at)).limit(limit).all()

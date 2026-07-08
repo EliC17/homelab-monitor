@@ -2,20 +2,48 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: monitor
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: monitor
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
- 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api:
     build: ./backend
-    env_file: .env
-    depends_on: [db]
+    env_file: backend/.env.docker
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
- 
+
+  collector:
+    build: ./collector
+    env_file: backend/.env.docker
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    depends_on:
+      - api
+    environment:
+      API_BASE: http://api:8000/api/v1
+      COLLECTOR_SECRET: ${COLLECTOR_SECRET}
+      PROXMOX_TOKEN_VALUE: ${PROXMOX_TOKEN_VALUE}
+      PROXMOX_USER: ${PROXMOX_USER}
+      PROXMOX_TOKEN_NAME: ${PROXMOX_TOKEN_NAME}
+      PROXMOX_NODE_NAME: ${PROXMOX_NODE_NAME}
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:

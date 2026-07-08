@@ -2,7 +2,11 @@
 
 
 
-TO RUN, bash dev-up.sh in backend
+TO RUN, docker compose up --build
+
+
+
+SEPERATE RUN, bash dev-up.sh in backend
         npm run dev in frontend
         source .venv/Scripts/activate then python main.py in collector
 

@@ -2,10 +2,12 @@
 
 
 
-TO RUN, bash dev-up.sh
-TO STOP, CTRL+C, bash dev-down.sh
+TO RUN, bash dev-up.sh in backend
+        npm run dev in frontend
+        source .venv/Scripts/activate then python main.py in collector
 
-In seperate terminal run this in collectors directory: source .venv/Scripts/activate
+        
+TO STOP, CTRL+C, bash dev-down.sh
 
 For testing once in .venv run these
 docker exec -it homelab-monitor-db-1 psql -U monitor -d monitor -c "CREATE DATABASE monitor_test;"

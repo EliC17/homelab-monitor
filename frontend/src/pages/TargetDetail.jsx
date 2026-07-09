@@ -12,6 +12,21 @@ export default function TargetDetail() {
   const [metrics, setMetrics] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState("reachable");
 
+  const [polling, setPolling] = useState(false);
+
+  async function handlePoll() {
+    setPolling(true);
+    try {
+      await client.post(`/targets/${id}/poll`);
+      setTimeout(() => {
+        client.get(`/targets/${id}/metrics`, {
+          params: { metric_name: selectedMetric, limit: 100 }
+        }).then(r => setMetrics([...r.data].reverse()));
+      }, 3000);
+    } catch {}
+    finally { setPolling(false); }
+  }
+
   useEffect(() => {
     client.get(`/targets/${id}`)
       .then(r => setTarget(r.data))
@@ -46,6 +61,20 @@ export default function TargetDetail() {
       </button>
       <h2>{target.name}</h2>
       <p style={{ color: "#555" }}>{target.hostname} — {target.target_type}</p>
+
+      <button
+        onClick={handlePoll}
+        disabled={polling}
+        style={{
+          marginBottom: "1rem", marginLeft: "0.5rem",
+          padding: "0.3rem 0.8rem",
+          background: polling ? "#eee" : "#2E5C8A",
+          color: polling ? "#888" : "white",
+          border: "none", borderRadius: 4, cursor: polling ? "default" : "pointer"
+        }}
+      >
+        {polling ? "Polling…" : "Poll Now"}
+      </button>
 
       <div style={{ marginBottom: "1rem" }}>
         {AVAILABLE_METRICS.map(m => (

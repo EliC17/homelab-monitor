@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 import requests
 import logging
+from poll_server import start_poll_server, set_poll_callback
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -19,7 +20,9 @@ CREDENTIALS_BY_TARGET_TYPE = {
         "node_name": os.environ.get("PROXMOX_NODE_NAME", "pve"),
     },
 }
+
 running_targets = {}
+target_registry = {}  # target_id -> target dict
 
 def fetch_targets():
     try:
@@ -34,10 +37,21 @@ def fetch_targets():
         logger.error(f"Failed to fetch targets: {e}")
         return []
 
-async def reconcile_loop(session, fetch_targets_fn, interval=60):
+async def poll_target_now(target_id: str):
+    """Called by poll server for manual/immediate polls."""
+    target = target_registry.get(target_id)
+    if not target:
+        logger.warning(f"Poll requested for unknown target: {target_id}")
+        return
+    from scheduler import poll_target
+    async with aiohttp.ClientSession() as session:
+        await poll_target(session, target, CREDENTIALS_BY_TARGET_TYPE.get(target["target_type"]))
+
+async def reconcile_loop(session):
     from scheduler import target_loop
     while True:
-        targets = {t["id"]: t for t in fetch_targets_fn() if t["enabled"]}
+        targets = {t["id"]: t for t in fetch_targets() if t["enabled"]}
+        target_registry.update(targets)
         logger.info(f"Reconcile: {len(targets)} active targets")
         for tid, t in targets.items():
             if tid not in running_targets:
@@ -47,7 +61,8 @@ async def reconcile_loop(session, fetch_targets_fn, interval=60):
             if tid not in targets:
                 running_targets[tid].cancel()
                 del running_targets[tid]
-        await asyncio.sleep(interval)
+            target_registry.pop(tid, None)
+        await asyncio.sleep(60)
 
 async def wait_for_api():
     api_root = API_BASE.replace("/api/v1", "")
@@ -64,9 +79,11 @@ async def wait_for_api():
     raise RuntimeError("API never became ready")
 
 async def main():
+    set_poll_callback(poll_target_now)
+    await start_poll_server()
     await wait_for_api()
     async with aiohttp.ClientSession() as session:
-        await reconcile_loop(session, fetch_targets)
+        await reconcile_loop(session)
 
 if __name__ == "__main__":
     asyncio.run(main())

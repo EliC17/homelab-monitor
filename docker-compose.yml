@@ -33,6 +33,7 @@ services:
     environment:
       API_BASE: http://api:8000/api/v1
       COLLECTOR_SECRET: ${COLLECTOR_SECRET}
+      COLLECTOR_INTERNAL_URL: http://collector:9000
       PROXMOX_TOKEN_VALUE: ${PROXMOX_TOKEN_VALUE}
       PROXMOX_USER: ${PROXMOX_USER}
       PROXMOX_TOKEN_NAME: ${PROXMOX_TOKEN_NAME}

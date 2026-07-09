@@ -5,6 +5,7 @@ import TargetDetail from "./pages/TargetDetail";
 import Alerts from "./pages/Alerts";
 import Login from "./pages/Login";
 import client from "./api/client";
+import Settings from "./pages/Settings";
 
 function Nav() {
   const [alertCount, setAlertCount] = useState(0);
@@ -40,6 +41,7 @@ function Nav() {
           </span>
         )}
       </a>
+      <a href="/settings" style={{ color: "white", textDecoration: "none" }}>Settings</a>
     </nav>
   );
 }
@@ -56,6 +58,7 @@ function Layout() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/targets/:id" element={<TargetDetail />} />
         <Route path="/alerts" element={<Alerts />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </>
   );
